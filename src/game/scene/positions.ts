@@ -91,11 +91,12 @@ export const LOGO_AT: Point = { x: 250, y: 215 };
 
 /**
  * The arrow row (`UI/ArrowSpot`, canvas y −160). KeyManager spawns arrow i at world x `−⌊n/2⌋·0.2 + i·0.2` (integer
- * division, so an even row would sit half a step right, as in the original). The canvas is Screen Space – Camera on
- * an orthographic camera of size 1, scaled to match a 500-unit reference width: on the square canvas the camera sees
- * 2 world units across 500 canvas units, so 0.2 world units are 50 canvas px. (On a wider window the original's
- * spacing shrank to 50 / aspect; the port keeps the square's.) 7 arrows span x 100–400, 112 to 388 with their 24 px
- * art: they fit the 500 px playfield with room to spare.
+ * division, so an even row sat half a step right; the original only had odd rows). The port centres every row (owner
+ * decision, endless mode's even rows): arrow i at `(i − (n − 1) / 2)` steps from the centre. The canvas is Screen
+ * Space – Camera on an orthographic camera of size 1, scaled to match a 500-unit reference width: on the square canvas
+ * the camera sees 2 world units across 500 canvas units, so 0.2 world units are 50 canvas px. (On a wider window the
+ * original's spacing shrank to 50 / aspect; the port keeps the square's.) 7 arrows span x 100–400, 112 to 388 with
+ * their 24 px art: they fit the 500 px playfield with room to spare.
  */
 export const ARROW_ROW: Point = { x: PLAYFIELD_SIZE / 2, y: PLAYFIELD_SIZE / 2 + 160 };
 export const ARROW_SPACING = 50;
@@ -103,7 +104,7 @@ export const ARROW_SPACING = 50;
 export const CURSOR_OFFSET = 35;
 
 /** The x of arrow `index` in a row of `count`, in playfield px. */
-export const arrowX = (index: number, count: number) => ARROW_ROW.x + (index - Math.floor(count / 2)) * ARROW_SPACING;
+export const arrowX = (index: number, count: number) => ARROW_ROW.x + (index - (count - 1) / 2) * ARROW_SPACING;
 
 /** Radius of the hold ring and of the circle of press pips around the arrow, in art px. */
 export const RING_RADIUS = 18;

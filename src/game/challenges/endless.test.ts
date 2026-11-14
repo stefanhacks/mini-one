@@ -75,6 +75,21 @@ describe("timeLimitMs", () => {
   });
 });
 
+describe("timeLimitMs, Holds", () => {
+  it("never lets the hold take more than 85% of the limit, at any level, whatever the slack", () => {
+    const hold: ChallengeSpec = { kind: "hold", direction: "up" };
+
+    for (let level = 0; level < 100; level++) {
+      assert.ok(TUNING.holdMs / timeLimitMs(hold, level, TUNING, ENDLESS_TUNING) <= 0.85, `level ${level}`);
+    }
+
+    // With no slack at all, the floor alone keeps it there.
+    const noSlack = { ...ENDLESS_TUNING, slackMs: 0, minSlackMs: 0 };
+
+    assert.equal(timeLimitMs(hold, 0, TUNING, noSlack), Math.ceil(TUNING.holdMs / 0.85));
+  });
+});
+
 describe("endlessStoryPart", () => {
   it("steps up to parts 1, 2 and 3 at levels 5, 10 and 15", () => {
     assert.deepEqual([0, 4, 5, 9, 10, 15, 99].map((level) => endlessStoryPart(level, ENDLESS_TUNING)), [

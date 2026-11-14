@@ -1,5 +1,5 @@
-// Endless mode end to end (endless-plan.md): the icon on Title's prompt, "... flee ...", two timed challenges answered,
-// a timeout, "... eat ...", the kraken, and back to Title at level 0. Written by Claude Code.
+// Endless mode end to end (endless-plan.md): the icon on Title's prompt, "... follow ...", two timed challenges
+// answered, a timeout, "... eat ...", the kraken, and back to Title at level 0. Written by Claude Code.
 import { expect, test } from "@playwright/test";
 import { ENDLESS_LINES } from "../src/game/story/script.ts";
 import {
@@ -29,7 +29,7 @@ test("opens from the icon, plays timed challenges, and a timeout ends the run wi
   // A real tap on the icon, not the E key: it must hit the corner square, not the pads.
   await page.mouse.click(rect.x + rect.width / 2, rect.y + rect.height / 2);
   await waitFor(page, (game) => game.state === "endless" && game.page !== null);
-  expect((await readGame(page)).page?.text).toBe(ENDLESS_LINES.flee[0].text);
+  expect((await readGame(page)).page?.text).toBe(ENDLESS_LINES.intro[0].text);
   expect((await readGame(page)).mode).toBe("endless");
 
   // From here game time runs at SLOW until the timeout: at FAST, a 3.7 s limit is about 115 ms of wall time, which a
@@ -40,7 +40,7 @@ test("opens from the icon, plays timed challenges, and a timeout ends the run wi
   await expect.poll(async () => {
     const game = await readGame(page);
 
-    if (game.phase === "flee") {
+    if (game.phase === "intro") {
       await driver.advance();
       await page.waitForTimeout(30);
     }

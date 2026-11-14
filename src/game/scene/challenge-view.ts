@@ -5,7 +5,7 @@ import type { ClipPlayer } from "../../core/anim/player.ts";
 import type { Layers } from "../../core/layers.ts";
 import type { Layout } from "../../core/layout.ts";
 import type { ChallengeProgress, ChallengeSpec } from "../challenges/rule.ts";
-import { createArrowPairs, createArrowPulse } from "./arrow-row.ts";
+import { createArrowPairs, createArrowPulse, createArrowShake } from "./arrow-row.ts";
 import type { Textures } from "./art-sprite.ts";
 import { CHALLENGE_PROMPTS, cursorKey, directionsOf, progressKey } from "./challenge-model.ts";
 import { drawProgressArt } from "./progress-art.ts";
@@ -22,8 +22,13 @@ export interface ChallengeView {
   readonly setProgress: (progress: ChallengeProgress | null) => void;
   /** Follows a new layout: the prompt and the progress art. */
   readonly relayout: (layout: Layout) => void;
-  /** Reduced motion (game/motion.ts): an arrow's pulse held at full alpha and scale 1 instead, now and from then on. */
+  /**
+   * Reduced motion (game/motion.ts): an arrow's pulse held at full alpha and scale 1 instead, and the wrong-key shake
+   * a dim instead, now and from then on.
+   */
   readonly setPulseHeld: (held: boolean) => void;
+  /** The wrong-key feedback on the shown arrows (arrow-row.ts `createArrowShake`). */
+  readonly shake: () => void;
 }
 
 /**
@@ -95,6 +100,7 @@ export const createChallengeView = (
   const arrows = new Container({ label: "arrows", visible: false });
   const pairs = createArrowPairs(arrows, textures);
   const pulse = createArrowPulse(clips, pairs);
+  const shake = createArrowShake(clips, pairs);
 
   layers.top.addChild(arrows);
 
@@ -118,11 +124,13 @@ export const createChallengeView = (
 
       challenge = spec;
       progressDraw.reset();
+      shake.setRow(0);
       pulse.stop();
       arrows.visible = spec !== null;
       prompt.visible = spec !== null;
       prompt.text = spec === null ? "" : CHALLENGE_PROMPTS[spec.kind];
       pairs.showRow(directionsOf(spec));
+      shake.setRow(directionsOf(spec).length);
 
       if (spec !== null && spec.kind !== "sequence") {
         pulse.start(spec.kind);
@@ -133,6 +141,10 @@ export const createChallengeView = (
       placeUiText(prompt, CHALLENGE_PROMPT, next);
       progressDraw.relayout(next);
     },
-    setPulseHeld: (held) => pulse.setHeld(held),
+    setPulseHeld: (held) => {
+      pulse.setHeld(held);
+      shake.setHeld(held);
+    },
+    shake: () => shake.shake(),
   };
 };

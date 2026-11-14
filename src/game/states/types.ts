@@ -118,6 +118,11 @@ export interface SceneView {
    * frame. `reset` hides it.
    */
   setTimeLeft(fraction: number | null): void;
+  /**
+   * The wrong-key feedback: every shown arrow shakes a little, or dims for a moment under reduced motion. A new call
+   * restarts it; a new challenge (or none) stops it.
+   */
+  shakeArrows(): void;
   /** A backdrop (`FadeIn`/`FadeOut`). */
   setBackdrop(backdrop: Backdrop, visible: boolean, fade?: Fade): void;
   setBoat(boat: Boat): void;

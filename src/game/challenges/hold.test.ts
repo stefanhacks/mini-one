@@ -174,4 +174,22 @@ describe("HoldRule", () => {
     assert.equal(rule.done, false);
     assert.deepEqual(doneAt, []);
   });
+
+  it("calls onMiss on a press of another direction", () => {
+    const clock = new GameClock();
+    let misses = 0;
+    const rule = new HoldRule("up", {
+      scope: clock.createScope(),
+      now: () => clock.now,
+      tuning: TUNING,
+      onMiss: () => {
+        misses += 1;
+      },
+    });
+
+    rule.press("up");
+    rule.press("left");
+    assert.equal(misses, 1);
+    assert.equal(rule.progress.held, true, "the running hold goes on");
+  });
 });

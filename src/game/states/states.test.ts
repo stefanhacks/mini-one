@@ -77,6 +77,8 @@ class FakeScene implements SceneView {
   challenge: ChallengeSpec | null = null;
   progress: ChallengeProgress | null = null;
   timeLeft: number | null = null;
+  /** How many times the arrows were shaken (a wrong key). */
+  shakes = 0;
   backdrops = new Set<Backdrop>();
   boat: Boat = "whole";
   kraken = false;
@@ -165,6 +167,10 @@ class FakeScene implements SceneView {
 
   setTimeLeft(fraction: number | null) {
     this.timeLeft = fraction;
+  }
+
+  shakeArrows() {
+    this.shakes += 1;
   }
 
   setBackdrop(backdrop: Backdrop, visible: boolean, fade?: Fade) {
@@ -1032,6 +1038,7 @@ describe("round", () => {
     t.input.press(wrong);
     t.frame();
     assert.deepEqual(t.scene.progress, { kind: "sequence", pointer: 0, length: 3 });
+    assert.equal(t.scene.shakes, 1, "a wrong key shakes the arrows");
   });
 
   it("fades the round's backdrop in from the win, then starts the next part after the wait", async () => {
@@ -1313,10 +1320,10 @@ describe("cues", () => {
 });
 
 describe("endless", () => {
-  const FLEE = ENDLESS_LINES.flee[0].text;
+  const INTRO = ENDLESS_LINES.intro[0].text;
   const EAT = ENDLESS_LINES.eat[0].text;
 
-  /** From Title's prompt, the icon's tap and the exit fade: endless mode's `flee`. */
+  /** From Title's prompt, the icon's tap and the exit fade: endless mode's `intro`. */
   const toEndless = async () => {
     const t = setup();
 
@@ -1331,8 +1338,8 @@ describe("endless", () => {
     return t;
   };
 
-  /** Reads "... flee ...": a tap completes it, a tap after the debounce plays. */
-  const flee = (t: Setup) => {
+  /** Reads "... follow ...": a tap completes it, a tap after the debounce plays. */
+  const intro = (t: Setup) => {
     t.input.advance();
     t.frame();
     t.wait(STORY_DEBOUNCE_MS);
@@ -1351,15 +1358,15 @@ describe("endless", () => {
     assert.equal(t.game.session.phase, "play");
   };
 
-  it("opens from Title's icon with \"... flee ...\" in the voice's style, then a timed Sequence", async () => {
+  it("opens from Title's icon with \"... follow ...\" in the voice's style, then a timed Sequence", async () => {
     const t = await toEndless();
 
-    assert.deepEqual([t.game.session.mode, t.game.session.phase, t.game.session.level], ["endless", "flee", 0]);
-    assert.equal(t.scene.page?.text, FLEE);
+    assert.deepEqual([t.game.session.mode, t.game.session.phase, t.game.session.level], ["endless", "intro", 0]);
+    assert.equal(t.scene.page?.text, INTRO);
     assert.equal(t.scene.page?.whisper, true);
     assert.equal(t.pad.visible, false);
 
-    flee(t);
+    intro(t);
 
     const spec = t.scene.challenge;
 
@@ -1403,7 +1410,7 @@ describe("endless", () => {
     const t = await toEndless();
 
     assert.equal(t.scene.timeLeft, null);
-    flee(t);
+    intro(t);
     t.wait(1000);
 
     const limit = t.game.session.timed?.limitMs ?? NaN;
@@ -1427,7 +1434,7 @@ describe("endless", () => {
   it("gives a new challenge and a fresh limit after each one cleared, and the level rises", async () => {
     const t = await toEndless();
 
-    flee(t);
+    intro(t);
     clear(t);
     assert.deepEqual([t.pad.dimmed, t.game.session.level], [false, 1]);
 
@@ -1442,7 +1449,7 @@ describe("endless", () => {
   it("steps the music, the bubbles and the backdrops up at levels 5, 10 and 15", async () => {
     const t = await toEndless();
 
-    flee(t);
+    intro(t);
 
     while (t.game.session.level < 15) {
       clear(t);
@@ -1456,7 +1463,7 @@ describe("endless", () => {
   it("on a timeout: black, \"... eat ...\", the kraken, then straight back to Title at level 0", async () => {
     const t = await toEndless();
 
-    flee(t);
+    intro(t);
     clear(t);
 
     const limit = t.game.session.timed?.limitMs ?? 0;
@@ -1492,7 +1499,7 @@ describe("endless", () => {
   it("snapshots the mode, the level, the challenge and its timer for window.debug", async () => {
     const t = await toEndless();
 
-    flee(t);
+    intro(t);
     clear(t);
 
     const snapshot = snapshotSession(t.game.session);
@@ -1506,10 +1513,28 @@ describe("endless", () => {
     assert.deepEqual([snapshotSession(t.game.session).challenge, snapshotSession(t.game.session).timer], [null, null]);
   });
 
+  it("shakes the arrows on a wrong key", async () => {
+    const t = await toEndless();
+
+    intro(t);
+
+    const spec = t.scene.challenge;
+
+    if (spec?.kind !== "sequence") {
+      throw new Error("level 0 is a Sequence");
+    }
+
+    const wrong = (["up", "down", "left", "right"] as const).find((dir) => dir !== spec.directions[0]);
+
+    t.input.press(wrong ?? "up");
+    t.frame();
+    assert.equal(t.scene.shakes, 1);
+  });
+
   it("restarts the limit with the challenge on the pause's resume", async () => {
     const t = await toEndless();
 
-    flee(t);
+    intro(t);
     t.wait(1000);
     t.game.resetChallenge();
     assert.equal(t.game.session.timed?.remainingMs, t.game.session.timed?.limitMs);
@@ -1543,7 +1568,7 @@ describe("endless", () => {
     assert.equal(t.machine.current, "endless");
     assert.deepEqual([t.game.session.mode, t.game.session.games, t.game.session.level], ["endless", games + 1, 0]);
     assert.equal(t.scene.boat, "whole");
-    assert.equal(t.scene.page?.text, FLEE);
+    assert.equal(t.scene.page?.text, INTRO);
   });
 
   it("replays the same challenges from the same seed", async () => {
@@ -1551,7 +1576,7 @@ describe("endless", () => {
       const t = await toEndless();
       const specs = [];
 
-      flee(t);
+      intro(t);
 
       for (let i = 0; i < 6; i++) {
         specs.push(t.scene.challenge);

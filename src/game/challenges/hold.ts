@@ -7,7 +7,8 @@ import type { ChallengeRule, HoldProgress, RuleContext } from "./rule.ts";
  * Rules (01 and 02):
  * - A press of the direction starts the hold; it completes once held for `holdMs` of game time (a timer, so it
  *   completes without any further input).
- * - Its release, or `cancelAll`, resets it. Other directions are ignored, pressed or released.
+ * - Its release, or `cancelAll`, resets it. Other directions don't affect it, pressed or released; a press of one calls
+ *   `context.onMiss` (the arrows shake).
  * - Only a press received by this rule starts a hold: a direction already held when the challenge began does not
  *   count until it is pressed again. A second press while holding keeps the running hold.
  */
@@ -42,7 +43,17 @@ export class HoldRule implements ChallengeRule {
   }
 
   press(dir: Direction): void {
-    if (this.finished || dir !== this.spec.direction || this.startedAt !== undefined) {
+    if (this.finished) {
+      return;
+    }
+
+    if (dir !== this.spec.direction) {
+      // A wrong key: the arrows shake. A running hold of the right direction goes on.
+      this.context.onMiss?.();
+      return;
+    }
+
+    if (this.startedAt !== undefined) {
       return;
     }
 

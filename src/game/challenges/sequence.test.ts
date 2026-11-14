@@ -10,11 +10,20 @@ const setup = (directions: Direction[]) => {
   const clock = new GameClock();
   const scope = clock.createScope();
   const doneAt: number[] = [];
-  const context: RuleContext = { scope, now: () => clock.now, tuning: TUNING, onDone: () => doneAt.push(clock.now) };
+  let misses = 0;
+  const context: RuleContext = {
+    scope,
+    now: () => clock.now,
+    tuning: TUNING,
+    onDone: () => doneAt.push(clock.now),
+    onMiss: () => {
+      misses += 1;
+    },
+  };
   const rule = new SequenceRule(directions, context);
   const pointer = () => rule.progress.pointer;
 
-  return { clock, scope, rule, doneAt, pointer };
+  return { clock, scope, rule, doneAt, pointer, misses: () => misses };
 };
 
 describe("SequenceRule", () => {
@@ -44,28 +53,48 @@ describe("SequenceRule", () => {
     assert.equal(pointer(), 0);
   });
 
-  it("goes to step 1 on a wrong press equal to step 0 (02 fix)", () => {
-    const { rule, pointer } = setup(["up", "down", "left"]);
+  it("starts over on a wrong press equal to step 0: step 0 is needed again (owner decision)", () => {
+    // The owner's example: "right down up right", entered "right down right".
+    const { rule, pointer, misses } = setup(["right", "down", "up", "right"]);
 
-    rule.press("up");
+    rule.press("right");
+    rule.press("down");
+    rule.press("right");
+    assert.equal(pointer(), 0);
+    assert.equal(misses(), 1);
+    rule.press("down");
+    assert.equal(pointer(), 0, "down isn't step 0");
+    rule.press("right");
     rule.press("down");
     rule.press("up");
-    assert.equal(pointer(), 1);
-    rule.press("down");
-    rule.press("left");
+    rule.press("right");
     assert.equal(rule.done, true);
+    assert.equal(misses(), 2);
   });
 
-  it("handles repeated step-0 arrows: up, up, down after a stray up", () => {
+  it("handles repeated step-0 arrows: a third up on up, up, down starts over", () => {
     const { rule, pointer } = setup(["up", "up", "down"]);
 
     rule.press("up");
     rule.press("up");
     rule.press("up");
-    assert.equal(pointer(), 1);
+    assert.equal(pointer(), 0);
+    rule.press("up");
     rule.press("up");
     rule.press("down");
     assert.equal(rule.done, true);
+  });
+
+  it("calls onMiss on every wrong press, and never on a correct one", () => {
+    const { rule, misses } = setup(["up", "down"]);
+
+    rule.press("left");
+    rule.press("up");
+    rule.press("left");
+    rule.press("up");
+    rule.press("down");
+    rule.press("left");
+    assert.equal(misses(), 2, "the press after done is ignored");
   });
 
   it("resets after 1 s without a correct press, without any input", () => {
@@ -105,17 +134,14 @@ describe("SequenceRule", () => {
     assert.equal(pointer(), 1);
   });
 
-  it("restarts the timeout on a wrong press equal to step 0: it is a correct step 0 (owner decision)", () => {
+  it("cancels the timeout on a wrong press equal to step 0, as on any wrong press", () => {
     const { clock, rule, pointer } = setup(["up", "down", "left"]);
 
     rule.press("up");
     clock.tick(600);
     rule.press("up");
-    assert.equal(pointer(), 1);
-    clock.tick(999);
-    assert.equal(pointer(), 1);
-    clock.tick(1);
     assert.equal(pointer(), 0);
+    assert.equal(clock.pendingTimers, 0);
   });
 
   it("does not restart the timeout on a truly wrong press: the pointer is 0 and stays 0", () => {

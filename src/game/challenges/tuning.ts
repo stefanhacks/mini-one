@@ -62,6 +62,8 @@ export interface EndlessTuning {
   /** A Hold's or Many's limit: its own time (`holdMs`, `manyWindowMs`) plus this slack, decaying to `minSlackMs`. */
   readonly slackMs: number;
   readonly minSlackMs: number;
+  /** The most of a Hold's limit its hold may take (owner decision): the limit is at least `holdMs / maxHoldShare`. */
+  readonly maxHoldShare: number;
   /** Per level, on the per-arrow time and the slack. */
   readonly decay: number;
   /** The pause between a cleared challenge and the next, the pad dimmed. */
@@ -83,6 +85,7 @@ export const ENDLESS_TUNING: EndlessTuning = {
   minPerArrowMs: 350,
   slackMs: 2000,
   minSlackMs: 600,
+  maxHoldShare: 0.85,
   decay: 0.94,
   betweenMs: 300,
   storyLevels: [5, 10, 15],
