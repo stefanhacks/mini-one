@@ -149,6 +149,16 @@ Where the build differs from the design above, or settles something it left open
 - **Two-line replay prompt:** ui texts don't wrap, and on one line the prompt is about 350 px at its 16 px floor, wider than a 320 px square. The line break after "Tap to start." keeps the owner's wording.
 - **Draw order:** the ui layer gains `endless-button` after `flashes-button` and `timer-bar` after `challenge-prompt` (`e2e/guards.spec.ts` pins it).
 
+## Follow-ups (cl-endless-fixes)
+
+Owner requests after the first merge:
+
+- **Opening line:** the run opens with `"... follow ..."` (`ENDLESS_LINES.intro`), not `"... flee ..."`; the phase is `intro`.
+- **Even rows are centred:** `arrowX` centres every row, `(i − (n − 1) / 2)` steps from the middle, instead of the original's integer division (which put an even row half a step right; the story only has odd rows).
+- **Hold share:** a Hold's limit is at least `holdMs / 0.85` (`maxHoldShare`), so the hold never takes more than 85% of it. With the current slack floor (600 ms) the limit was already 3.6 s at worst (83%); the rule now holds whatever the tuning.
+- **Wrong-key feedback, whole game:** rules call `RuleContext.onMiss` on a wrong key (a Sequence press that isn't the next arrow; a Hold or Many press of another direction), and the states call `SceneView.shakeArrows`: every shown arrow swings ±3 art px over 0.3 s, or dims to 35% and back under reduced motion.
+- **A wrong press always starts a Sequence over:** even one equal to step 0, which used to count as step 0 (02's fix). This replaces that earlier owner decision.
+
 ## Risks
 
 - **4th corner slot:** checked. The stack needs 192 px of safe height; the layout math places it at 568×320, 640×360, 667×375 and 844×390 landscape, and the e2e stack test passes on iPhone 13 and Pixel 7 in both orientations. Unusual safe-area insets still need a real-device look.

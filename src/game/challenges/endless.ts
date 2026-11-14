@@ -63,7 +63,8 @@ export const generateEndless = (rng: Rng, level: number, endless: EndlessTuning)
 
 /**
  * `spec`'s time limit at `level`, in ms of game time: a Sequence gets a base plus a per-arrow time, a Hold or a Many
- * its own time plus a slack. The per-arrow time and the slack shrink by `decay` per level, down to their floors.
+ * its own time plus a slack. The per-arrow time and the slack shrink by `decay` per level, down to their floors. A
+ * Hold's limit is also at least `holdMs / maxHoldShare`, so the hold is at most that share of it.
  */
 export const timeLimitMs = (spec: ChallengeSpec, level: number, tuning: Tuning, endless: EndlessTuning): number => {
   const shrink = endless.decay ** level;
@@ -75,9 +76,13 @@ export const timeLimitMs = (spec: ChallengeSpec, level: number, tuning: Tuning, 
   }
 
   const slack = Math.max(endless.minSlackMs, endless.slackMs * shrink);
-  const own = spec.kind === "hold" ? tuning.holdMs : tuning.manyWindowMs;
 
-  return Math.round(own + slack);
+  if (spec.kind === "many") {
+    return Math.round(tuning.manyWindowMs + slack);
+  }
+
+  // The hold never takes more than `maxHoldShare` of the limit (owner decision).
+  return Math.ceil(Math.max(tuning.holdMs + slack, tuning.holdMs / endless.maxHoldShare));
 };
 
 /** The story part (0–3) whose music, bubbles and backdrops show at `level`. */

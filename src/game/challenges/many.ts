@@ -8,7 +8,8 @@ import type { ChallengeRule, ManyProgress, RuleContext } from "./rule.ts";
  * - The window opens at the first counted press of this challenge (not at spawn, and nothing leaks between
  *   challenges: each rule has its own window).
  * - When it expires the count goes back to 0 and no window is open; the next counted press opens a new one.
- * - Presses of other directions are ignored, as are releases and `cancelAll` (presses already counted stay counted).
+ * - Presses of other directions count for nothing (they call `context.onMiss`: the arrows shake), and releases and
+ *   `cancelAll` are ignored (presses already counted stay counted).
  * - Key repeat must never reach `press` (the router drops `KeyboardEvent.repeat`).
  */
 export class ManyRule implements ChallengeRule {
@@ -41,7 +42,13 @@ export class ManyRule implements ChallengeRule {
   }
 
   press(dir: Direction): void {
-    if (this.finished || dir !== this.spec.direction) {
+    if (this.finished) {
+      return;
+    }
+
+    if (dir !== this.spec.direction) {
+      // Another direction counts for nothing, but it is a wrong key: the arrows shake.
+      this.context.onMiss?.();
       return;
     }
 

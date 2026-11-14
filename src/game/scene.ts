@@ -170,6 +170,7 @@ export const createScene = (
     setChallenge: (spec) => challenge.setChallenge(spec),
     setProgress: (progress) => challenge.setProgress(progress),
     setTimeLeft: (fraction) => timerBar.setFraction(fraction),
+    shakeArrows: () => challenge.shake(),
     setBackdrop: (backdrop, visible, fade) => world.setBackdrop(backdrop, visible, fade),
     setBoat: (state) => world.setBoat(state),
     setKraken: (visible, fade) => world.setKraken(visible, fade),

@@ -13,11 +13,11 @@ import {
 } from "./positions.ts";
 
 describe("arrowX", () => {
-  it("centres an odd row, an even row half a step right (KeyManager's integer division), ARROW_SPACING apart", () => {
+  it("centres every row, odd or even (owner decision; the original's even row sat half a step right)", () => {
     const CASES: readonly (readonly [count: number, row: readonly number[]])[] = [
       [1, [ARROW_ROW.x]],
       [3, [200, 250, 300]],
-      [4, [150, 200, 250, 300]],
+      [4, [175, 225, 275, 325]],
       [7, [100, 150, 200, 250, 300, 350, 400]],
     ];
 

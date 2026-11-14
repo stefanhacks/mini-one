@@ -149,4 +149,22 @@ describe("ManyRule", () => {
     tap(clock, rule, 9, 200);
     assert.equal(rule.done, true);
   });
+
+  it("calls onMiss on a press of another direction", () => {
+    const clock = new GameClock();
+    let misses = 0;
+    const rule = new ManyRule("up", {
+      scope: clock.createScope(),
+      now: () => clock.now,
+      tuning: TUNING,
+      onMiss: () => {
+        misses += 1;
+      },
+    });
+
+    rule.press("up");
+    rule.press("left");
+    assert.equal(misses, 1);
+    assert.equal(rule.progress.count, 1, "it counts for nothing");
+  });
 });

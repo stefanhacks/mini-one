@@ -71,7 +71,7 @@ export const createRound = (deps: GameDeps, session: GameSession): GameState => 
       // No eye while the challenges are up.
       scene().setUndersea({ part: session.part, eyesFor: 0 });
 
-      const context = ruleContext(clock, scope, tuning, () => winRound(scope, machine));
+      const context = ruleContext(clock, scope, tuning, () => winRound(scope, machine), () => scene().shakeArrows());
 
       session.round = new Round(specs, context, showChallenge);
       showChallenge();

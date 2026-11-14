@@ -7,10 +7,10 @@ import type { ChallengeRule, RuleContext, SequenceProgress } from "./rule.ts";
  * Rules (01 and 02, with the quirk fixes and owner decisions):
  * - A correct press advances the pointer and (re)starts the timeout: `sequenceTimeoutMs` after the last correct
  *   press, the pointer resets to 0.
- * - A wrong press equal to step 0 counts as a correct step 0 of a new attempt: the pointer goes to 1 and the timeout
- *   restarts (02 fix, owner decision).
- * - Any other wrong press resets the pointer to 0 and does not restart the timeout (owner decision, as the original's
- *   `delayTimer`). With the pointer at 0 the timeout has nothing left to reset, so it is cancelled.
+ * - Any wrong press resets the pointer to 0, even one equal to step 0: the attempt starts over and needs step 0 pressed
+ *   again (owner decision, replacing 02's "a wrong step-0 press counts as step 0"). It doesn't restart the timeout (as
+ *   the original's `delayTimer`): with the pointer at 0 the timeout has nothing left to reset, so it is cancelled. It
+ *   calls `context.onMiss` (the arrows shake).
  * - Every press is a discrete event handled in order, so mashing several arrows in one frame no longer advances.
  * - Releases are ignored.
  */
@@ -56,16 +56,9 @@ export class SequenceRule implements ChallengeRule {
       return;
     }
 
-    if (dir === directions[0]) {
-      // A correct step 0 of a new attempt (owner decision): it restarts the timeout like any correct press.
-      this.pointer = 1;
-      this.restartTimeout();
-
-      return;
-    }
-
     this.pointer = 0;
     this.stopTimeout();
+    this.context.onMiss?.();
   }
 
   release(_dir: Direction): void {}

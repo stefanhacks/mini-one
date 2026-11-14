@@ -52,6 +52,11 @@ export interface RuleContext {
    * during `clock.tick`) for Hold. Optional; `done` can be polled instead.
    */
   readonly onDone?: () => void;
+  /**
+   * Called on every wrong key: a Sequence press that isn't the next arrow, or a Hold or Many press of another
+   * direction (the arrows shake). Never after `done`. Optional.
+   */
+  readonly onMiss?: () => void;
 }
 
 /**
@@ -101,4 +106,5 @@ export const ruleContext = (
   scope: TimerScope,
   tuning: Tuning,
   onDone?: () => void,
-): RuleContext => ({ scope, now: () => clock.now, tuning, onDone });
+  onMiss?: () => void,
+): RuleContext => ({ scope, now: () => clock.now, tuning, onDone, onMiss });

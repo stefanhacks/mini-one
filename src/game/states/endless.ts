@@ -22,7 +22,7 @@ const BACKDROPS: readonly (Backdrop | null)[] = [null, "pillars", "tentacles", n
 
 /**
  * Endless mode, entered on a new game whose `session.mode` is "endless" (from Title's exit, or the Ending's). Phases:
- * - `flee`: "... flee ..." is typed in the voice's style. A tap completes it, and once typed, a tap after
+ * - `intro`: "... follow ..." is typed in the voice's style. A tap completes it, and once typed, a tap after
  *   STORY_DEBOUNCE_MS goes on, as a story page.
  * - `play`: the pad is up with a challenge generated for `session.level` (challenges/endless.ts), under its time limit
  *   (challenges/timed.ts). Input goes to it as in Round.
@@ -133,7 +133,7 @@ export const createEndless = (deps: GameDeps, session: GameSession): GameState =
     scene().setUndersea({ part: session.part, eyesFor: 0 });
 
     const spec = generateEndless(rng, session.level, endless);
-    const context = ruleContext(clock, scope, tuning, () => cleared(scope, machine));
+    const context = ruleContext(clock, scope, tuning, () => cleared(scope, machine), () => scene().shakeArrows());
 
     const limitMs = timeLimitMs(spec, session.level, tuning, endless);
 
@@ -160,17 +160,17 @@ export const createEndless = (deps: GameDeps, session: GameSession): GameState =
       hidePad(pad);
       rng = createRng((session.seed ^ ENDLESS_SALT) >>> 0);
       session.timed = null;
-      session.phase = "flee";
+      session.phase = "intro";
       audio.setStoryPart(session.part);
       // No eye behind the text box.
       scene().setUndersea({ part: session.part, eyesFor: 0 });
-      showWhisper(ENDLESS_LINES.flee);
+      showWhisper(ENDLESS_LINES.intro);
     },
     update: (deltaMS, machine, scope) => {
       const events = input.drain();
 
       switch (session.phase) {
-      case "flee": {
+      case "intro": {
         const advanced = events.some((event) => event.kind === "advance");
         const wasTyping = session.typewriter?.done === false;
 

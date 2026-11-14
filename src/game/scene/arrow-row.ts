@@ -2,6 +2,7 @@
 // hidden and reused, never destroyed; and the pulse of a Hold's or a Many's arrow. Written by Claude Code.
 import { Sprite, type Container } from "pixi.js";
 import { CLIPS } from "../../assets/anims.ts";
+import type { Clip } from "../../core/anim/clip.ts";
 import type { ClipHandle, ClipPlayer } from "../../core/anim/player.ts";
 import { placeOnArtGrid } from "../../core/layers.ts";
 import type { Direction } from "../direction.ts";
@@ -141,6 +142,110 @@ export const createArrowPulse = (clips: ClipPlayer, pairs: ArrowPairs) => {
     setHeld: (held: boolean) => {
       pulseHeld = held;
       play();
+    },
+  };
+};
+
+/** A key with flat tangents (the Hermite curve eases in and out of it), as the clips' keys are read. */
+const flatKey = (time: number, value: number) => ({ time, value, inSlope: 0, outSlope: 0, tangentMode: 136 });
+
+/**
+ * The wrong-key shake (new in this port, owner decision): each arrow swings ±3 art px sideways, dying out over 0.3 s,
+ * back to its place. Position values are playfield px from the arrow's own place (player.ts `origin`); y stays.
+ */
+export const ARROW_SHAKE: Clip = {
+  name: "ArrowShake (port)",
+  length: 0.3,
+  loop: false,
+  legacy: false,
+  controllers: [],
+  curves: [
+    {
+      path: "",
+      attribute: "m_LocalPosition.x",
+      component: "Transform",
+      keys: [[0, 0], [0.05, 3], [0.1, -3], [0.15, 2], [0.2, -2], [0.25, 1], [0.3, 0]].map(([t, v]) => flatKey(t, v)),
+    },
+    { path: "", attribute: "m_LocalPosition.y", component: "Transform", keys: [flatKey(0, 0), flatKey(0.3, 0)] },
+  ],
+  sprites: [],
+  events: [],
+};
+
+/** The shake under reduced motion: the arrows dim to 35% and come back over 0.3 s, without moving. */
+export const ARROW_DIM: Clip = {
+  name: "ArrowDim (port)",
+  length: 0.3,
+  loop: false,
+  legacy: false,
+  controllers: [],
+  curves: [
+    {
+      path: "",
+      attribute: "m_Color.a",
+      component: "SpriteRenderer",
+      keys: [flatKey(0, 1), flatKey(0.08, 0.35), flatKey(0.3, 1)],
+    },
+  ],
+  sprites: [],
+  events: [],
+};
+
+/**
+ * The wrong-key feedback on every shown arrow of `pairs` (and arrow 0's pulse overlay, which draws over it): the shake,
+ * or the dim while `held` (reduced motion, as the pulses are held). Written by Claude Code.
+ */
+export const createArrowShake = (clips: ClipPlayer, pairs: ArrowPairs) => {
+  let playing: ClipHandle[] = [];
+  let held = false;
+  // The shown row's length, for each arrow's place.
+  let count = 0;
+
+  /** Stops a shake or dim where it is, every arrow back at its place and fully opaque. */
+  const stop = () => {
+    for (const handle of playing) {
+      handle.stop();
+    }
+
+    playing = [];
+
+    for (let index = 0; index < count; index++) {
+      pairs.arrows[index].alpha = 1;
+      placeOnArtGrid(pairs.arrows[index], arrowX(index, count), ARROW_ROW.y);
+    }
+
+    const [overlay] = pairs.pulses;
+
+    if (overlay !== undefined && count > 0) {
+      placeOnArtGrid(overlay, arrowX(0, count), ARROW_ROW.y);
+    }
+  };
+
+  return {
+    /** A new row of `length` arrows is shown (or none, 0): any shake stops. */
+    setRow: (length: number) => {
+      stop();
+      count = length;
+    },
+    shake: () => {
+      stop();
+
+      for (let index = 0; index < count; index++) {
+        const origin = { x: arrowX(index, count), y: ARROW_ROW.y };
+        const nodes = [pairs.arrows[index]];
+        const overlay = pairs.pulses[index];
+
+        if (index === 0 && overlay?.visible === true) {
+          nodes.push(overlay);
+        }
+
+        for (const node of nodes) {
+          playing.push(held ? clips.play(ARROW_DIM, { node }) : clips.play(ARROW_SHAKE, { node, origin }));
+        }
+      }
+    },
+    setHeld: (next: boolean) => {
+      held = next;
     },
   };
 };

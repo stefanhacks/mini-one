@@ -27,10 +27,10 @@ export type SessionPhase =
   | EndingPhase;
 
 /**
- * Endless mode's phases (states/endless.ts): `flee` (the opening whisper; a tap goes on), `play` (a timed challenge
+ * Endless mode's phases (states/endless.ts): `intro` (the opening whisper; a tap goes on), `play` (a timed challenge
  * up), `cleared` (the pause before the next) and `caught` (the timeout: black, then "... eat ...").
  */
-export type EndlessPhase = "flee" | "cleared" | "caught";
+export type EndlessPhase = "intro" | "cleared" | "caught";
 
 /** The Ending's phases, in order (ending.ts). `replay` takes the tap, as Title's `prompt` does. */
 export type EndingPhase = "boat" | "thrown" | "kraken" | "black" | "sea" | "card" | "replay";
